@@ -5597,6 +5597,14 @@ MonoBehaviour:
     - {fileID: 8684520031328598876, guid: 8cad23d01d0fcb749a1c9e2e4a902b5e, type: 3}
     isCompleted: 0
     isLocked: 0
+  - stageName: "\u041F\u0440\u043E\u0446\u0435\u0441\u0441\u043E\u0440"
+    stageDescription: "\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0435
+      \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u043E\u0440 \u0432 \u0441\u043E\u043A\u0435\u0442
+      \u043C\u0430\u0442\u0435\u0440\u0438\u043D\u0441\u043A\u043E\u0439 \u043F\u043B\u0430\u0442\u044B"
+    availableParts:
+    - {fileID: 4186114858503882316, guid: 207bfed952f13ba4eaae808d6c21958d, type: 3}
+    isCompleted: 0
+    isLocked: 0
   currentStageIndex: 0
   nextStageKey: 110
   previousStageKey: 98
@@ -5788,10 +5796,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45e334d53ae297a4f860898746c6c78d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_BuildingPartReferences:
-  - {fileID: 404618684363950792, guid: c806ad6c1a82d4314ab57879cc6d6c71, type: 3}
-  - {fileID: 3905710294307925887, guid: 1d09a4639bba44648b0eb8664c5caf80, type: 3}
-  - {fileID: 8684520031328598876, guid: 8cad23d01d0fcb749a1c9e2e4a902b5e, type: 3}
+  m_BuildingPartReferences: []
   m_AllSurfaces:
   - Ground
   - StartTable
