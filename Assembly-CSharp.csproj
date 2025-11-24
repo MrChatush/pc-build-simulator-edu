@@ -81,6 +81,7 @@
     <Compile Include="Assets\Easy Build System\Features\Runtime\Extensions\GameObjectExtension.cs" />
     <Compile Include="Assets\Easy Build System\Features\Runtime\Bases\Drawers\CustomHeaderAttribute.cs" />
     <Compile Include="Assets\Easy Build System\Features\Runtime\Buildings\Part\BuildingPart.cs" />
+    <Compile Include="Assets\Scripts\PCAssemblyManagerPCAssemblyManager.cs" />
     <Compile Include="Assets\Easy Build System\Features\Runtime\Buildings\Manager\BuildingType.cs" />
     <Compile Include="Assets\Easy Build System\Packages\Addons\House Furnitures\Scripts\UIBuildingMenu.cs" />
     <Compile Include="Assets\Easy Build System\Packages\Examples\Bases\Scripts\Demo_BasicRigidBodyPush.cs" />
@@ -117,6 +118,7 @@
     <Compile Include="Assets\Easy Build System\Features\Runtime\Buildings\Placer\InputHandler\AndroidInputHandler.cs" />
     <Compile Include="Assets\Easy Build System\Features\Runtime\Buildings\Socket\BuildingSocket.cs" />
     <Compile Include="Assets\Easy Build System\Packages\Addons\Advanced Building\Scripts\CarriableObject.cs" />
+    <Compile Include="Assets\Scripts\PCAssemblyUI.cs" />
     <Compile Include="Assets\Easy Build System\Features\Runtime\Extensions\UIExtension.cs" />
     <Compile Include="Assets\Easy Build System\Features\Runtime\Buildings\Part\Conditions\BuildingConditionAttribute.cs" />
     <Compile Include="Assets\Easy Build System\Packages\Addons\Advanced Building\Scripts\CarriableController.cs" />

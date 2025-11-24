@@ -1,6 +1,8 @@
 fileFormatVersion: 2
-guid: 64dc40cb9d37f45e58bae6283fb9c3b6
-DefaultImporter:
+guid: 8cad23d01d0fcb749a1c9e2e4a902b5e
+labels:
+- BuildingPart
+PrefabImporter:
   externalObjects: {}
   userData: 
   assetBundleName: 

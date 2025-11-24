@@ -1,12 +1,6 @@
-﻿/// <summary>
-/// Project : Easy Build System
-/// Class : BuildingManager.cs
-/// Namespace : EasyBuildSystem.Features.Runtime.Buildings.Manager
-/// Copyright : © 2015 - 2022 by PolarInteractive
-/// </summary>
-
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using UnityEngine;
 using UnityEngine.Events;
@@ -36,6 +30,36 @@ namespace EasyBuildSystem.Features.Runtime.Buildings.Manager
 
         [SerializeField] List<string> m_AllSurfaces = new List<string>();
         public List<string> AllSurfaces { get { return m_AllSurfaces; } set { m_AllSurfaces = value; } }
+
+        [Header("PC Assembly Stages System")]
+        [SerializeField] bool m_EnablePCAssemblyStages = false;
+        public bool EnablePCAssemblyStages { get { return m_EnablePCAssemblyStages; } set { m_EnablePCAssemblyStages = value; } }
+
+        [SerializeField] List<PCAssemblyStage> m_AssemblyStages = new List<PCAssemblyStage>();
+        public List<PCAssemblyStage> AssemblyStages { get { return m_AssemblyStages; } set { m_AssemblyStages = value; } }
+
+        [SerializeField] int m_CurrentStageIndex = 0;
+        public int CurrentStageIndex { get { return m_CurrentStageIndex; } set { m_CurrentStageIndex = value; } }
+
+        [Header("Stage Navigation Keys")]
+        [SerializeField] KeyCode m_NextStageKey = KeyCode.N;
+        public KeyCode NextStageKey { get { return m_NextStageKey; } set { m_NextStageKey = value; } }
+
+        [SerializeField] KeyCode m_PreviousStageKey = KeyCode.B;
+        public KeyCode PreviousStageKey { get { return m_PreviousStageKey; } set { m_PreviousStageKey = value; } }
+
+        [SerializeField] KeyCode m_SwitchPartKey = KeyCode.Tab;
+        public KeyCode SwitchPartKey { get { return m_SwitchPartKey; } set { m_SwitchPartKey = value; } }
+
+        [Serializable]
+        public class PCAssemblyStage
+        {
+            public string stageName;
+            public string stageDescription;
+            public List<BuildingPart> availableParts = new List<BuildingPart>();
+            public bool isCompleted = false;
+            public bool isLocked = false;
+        }
 
         [Serializable]
         public class AreaOfInterestSettings
@@ -138,6 +162,18 @@ namespace EasyBuildSystem.Features.Runtime.Buildings.Manager
         [Serializable] public class UnregisterBuildingGroupEvent : UnityEvent { }
         public UnregisterBuildingGroupEvent OnUnregisterBuildingGroupEvent = new UnregisterBuildingGroupEvent();
 
+        /// <summary>
+        /// Called when a PC Assembly Stage is changed.
+        /// </summary>
+        [Serializable] public class StageChangedEvent : UnityEvent<int, PCAssemblyStage> { }
+        public StageChangedEvent OnStageChangedEvent = new StageChangedEvent();
+
+        /// <summary>
+        /// Called when a PC Assembly Stage is completed.
+        /// </summary>
+        [Serializable] public class StageCompletedEvent : UnityEvent<int, PCAssemblyStage> { }
+        public StageCompletedEvent OnStageCompletedEvent = new StageCompletedEvent();
+
         #endregion
 
         #endregion
@@ -151,6 +187,12 @@ namespace EasyBuildSystem.Features.Runtime.Buildings.Manager
                 InvokeRepeating(nameof(UpdateAreaOfInterest),
                     m_AreaOfInterestSettings.RefreshInterval, m_AreaOfInterestSettings.RefreshInterval);
             }
+
+            // Initialize PC Assembly Stages if enabled
+            if (m_EnablePCAssemblyStages)
+            {
+                InitializePCAssemblyStages();
+            }
         }
 
         void Update()
@@ -160,9 +202,266 @@ namespace EasyBuildSystem.Features.Runtime.Buildings.Manager
                 return;
             }
 
+            // Handle PC Assembly Stage navigation
+            if (m_EnablePCAssemblyStages)
+            {
+                HandleStageNavigation();
+            }
+
             if (m_BuildingBatchingSettings.UseDynamicBatching)
             {
                 UpdateBuildingBatching();
+            }
+        }
+
+        #endregion
+
+        #region PC Assembly Stages System
+
+        /// <summary>
+        /// Initialize the PC Assembly Stages system.
+        /// </summary>
+        void InitializePCAssemblyStages()
+        {
+            if (m_AssemblyStages.Count == 0)
+            {
+                CreateDefaultStages();
+            }
+
+            SetCurrentStage(m_CurrentStageIndex);
+        }
+
+        /// <summary>
+        /// Create default PC assembly stages.
+        /// </summary>
+        void CreateDefaultStages()
+        {
+            m_AssemblyStages = new List<PCAssemblyStage>
+            {
+                new PCAssemblyStage
+                {
+                    stageName = "Системный блок",
+                    stageDescription = "Выберите и установите корпус системного блока",
+                    isLocked = false
+                },
+                new PCAssemblyStage
+                {
+                    stageName = "Материнская плата",
+                    stageDescription = "Установите материнскую плату в корпус",
+                    isLocked = true
+                },
+                new PCAssemblyStage
+                {
+                    stageName = "Процессор",
+                    stageDescription = "Установите процессор в сокет материнской платы",
+                    isLocked = true
+                },
+                new PCAssemblyStage
+                {
+                    stageName = "Оперативная память",
+                    stageDescription = "Установите модули оперативной памяти в слоты",
+                    isLocked = true
+                },
+                new PCAssemblyStage
+                {
+                    stageName = "Видеокарта",
+                    stageDescription = "Установите видеокарту в PCI-E слот",
+                    isLocked = true
+                },
+                new PCAssemblyStage
+                {
+                    stageName = "Блок питания",
+                    stageDescription = "Установите блок питания в корпус",
+                    isLocked = true
+                },
+                new PCAssemblyStage
+                {
+                    stageName = "Накопители",
+                    stageDescription = "Установите SSD/HDD накопители",
+                    isLocked = true
+                },
+                new PCAssemblyStage
+                {
+                    stageName = "Охлаждение",
+                    stageDescription = "Установите систему охлаждения процессора",
+                    isLocked = true
+                }
+            };
+        }
+
+        /// <summary>
+        /// Handle stage navigation input.
+        /// </summary>
+        void HandleStageNavigation()
+        {
+            if (Input.GetKeyDown(m_NextStageKey))
+            {
+                NextStage();
+            }
+
+            if (Input.GetKeyDown(m_PreviousStageKey))
+            {
+                PreviousStage();
+            }
+
+            if (Input.GetKeyDown(m_SwitchPartKey))
+            {
+                SwitchToNextBuildingPart();
+            }
+        }
+
+        /// <summary>
+        /// Switch to the next building part in current stage.
+        /// </summary>
+        public void SwitchToNextBuildingPart()
+        {
+            if (!m_EnablePCAssemblyStages || m_AssemblyStages.Count == 0) return;
+
+            var currentStage = m_AssemblyStages[m_CurrentStageIndex];
+            if (currentStage.availableParts.Count == 0) return;
+
+            // Simple part switching logic - you can enhance this
+            Debug.Log($"Available parts in current stage: {currentStage.availableParts.Count}");
+
+            // Here you would implement the actual part switching logic
+            // This is a placeholder for the part switching functionality
+        }
+
+        /// <summary>
+        /// Move to the next assembly stage.
+        /// </summary>
+        public void NextStage()
+        {
+            if (m_CurrentStageIndex < m_AssemblyStages.Count - 1)
+            {
+                SetCurrentStage(m_CurrentStageIndex + 1);
+            }
+            else
+            {
+                Debug.Log("PC Assembly Complete! All stages finished.");
+            }
+        }
+
+        /// <summary>
+        /// Move to the previous assembly stage.
+        /// </summary>
+        public void PreviousStage()
+        {
+            if (m_CurrentStageIndex > 0)
+            {
+                SetCurrentStage(m_CurrentStageIndex - 1);
+            }
+        }
+
+        /// <summary>
+        /// Set the current assembly stage.
+        /// </summary>
+        public void SetCurrentStage(int stageIndex)
+        {
+            if (stageIndex < 0 || stageIndex >= m_AssemblyStages.Count)
+            {
+                Debug.LogError("Invalid stage index: " + stageIndex);
+                return;
+            }
+
+            // Check if stage is locked
+            if (m_AssemblyStages[stageIndex].isLocked)
+            {
+                Debug.LogWarning($"Stage '{m_AssemblyStages[stageIndex].stageName}' is locked! Complete previous stages first.");
+                return;
+            }
+
+            m_CurrentStageIndex = stageIndex;
+            var currentStage = m_AssemblyStages[m_CurrentStageIndex];
+
+            // Update available building parts for this stage
+            UpdateAvailableBuildingParts(currentStage);
+
+            // Trigger stage changed event
+            OnStageChangedEvent.Invoke(m_CurrentStageIndex, currentStage);
+
+            Debug.Log($"Current Stage: {currentStage.stageName} - {currentStage.stageDescription}");
+        }
+
+        /// <summary>
+        /// Update available building parts for the current stage.
+        /// </summary>
+        void UpdateAvailableBuildingParts(PCAssemblyStage stage)
+        {
+            // Clear current building parts
+            m_BuildingPartReferences.Clear();
+
+            // Add parts available for this stage
+            if (stage.availableParts.Count > 0)
+            {
+                m_BuildingPartReferences.AddRange(stage.availableParts);
+            }
+
+            Debug.Log($"Stage '{stage.stageName}' has {stage.availableParts.Count} available parts");
+        }
+
+        /// <summary>
+        /// Complete the current stage and unlock the next one.
+        /// </summary>
+        public void CompleteCurrentStage()
+        {
+            if (m_CurrentStageIndex < m_AssemblyStages.Count)
+            {
+                m_AssemblyStages[m_CurrentStageIndex].isCompleted = true;
+
+                // Unlock next stage if exists
+                if (m_CurrentStageIndex < m_AssemblyStages.Count - 1)
+                {
+                    m_AssemblyStages[m_CurrentStageIndex + 1].isLocked = false;
+                }
+
+                OnStageCompletedEvent.Invoke(m_CurrentStageIndex, m_AssemblyStages[m_CurrentStageIndex]);
+
+                // Auto-advance to next stage
+                NextStage();
+            }
+        }
+
+        /// <summary>
+        /// Get the current assembly stage.
+        /// </summary>
+        public PCAssemblyStage GetCurrentStage()
+        {
+            if (m_CurrentStageIndex < m_AssemblyStages.Count)
+            {
+                return m_AssemblyStages[m_CurrentStageIndex];
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Check if all assembly stages are completed.
+        /// </summary>
+        public bool IsAssemblyComplete()
+        {
+            return m_AssemblyStages.All(stage => stage.isCompleted);
+        }
+
+        /// <summary>
+        /// Manually unlock a specific stage.
+        /// </summary>
+        public void UnlockStage(int stageIndex)
+        {
+            if (stageIndex >= 0 && stageIndex < m_AssemblyStages.Count)
+            {
+                m_AssemblyStages[stageIndex].isLocked = false;
+                Debug.Log($"Stage {stageIndex} unlocked: {m_AssemblyStages[stageIndex].stageName}");
+            }
+        }
+
+        /// <summary>
+        /// Add a part to a specific stage.
+        /// </summary>
+        public void AddPartToStage(int stageIndex, BuildingPart part)
+        {
+            if (stageIndex >= 0 && stageIndex < m_AssemblyStages.Count && part != null)
+            {
+                m_AssemblyStages[stageIndex].availableParts.Add(part);
             }
         }
 
@@ -544,7 +843,7 @@ namespace EasyBuildSystem.Features.Runtime.Buildings.Manager
             {
                 if (RegisteredBuildingGroups[i] != null)
                 {
-                    if (Vector3.Distance(buildingPart.transform.position, 
+                    if (Vector3.Distance(buildingPart.transform.position,
                         RegisteredBuildingGroups[i].transform.position) < 128)
                     {
                         return RegisteredBuildingGroups[i];

@@ -9,15 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fd15769d00869be418b02d51106b8b6c, type: 3}
-  m_Name: Building Types
+  m_Script: {fileID: 11500000, guid: 51333b830fce45f43a6190548dd82766, type: 3}
+  m_Name: New Building Collection
   m_EditorClassIdentifier: 
-  m_AllBuildingTypes:
-  - Wall
-  - Floor
-  - Foundation
-  - Stair
-  - BlockPC
-  - GPU
-  - Table
-  - Mathboard
+  m_BuildingParts:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
