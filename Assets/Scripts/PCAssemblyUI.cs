@@ -18,14 +18,13 @@ public class PCAssemblyUI : MonoBehaviour
     public TextMeshProUGUI debugText;
 
     [Header("Update Settings")]
-    public float updateInterval = 0.1f; // Частота обновления в секундах
+    public float updateInterval = 0.1f;
     public bool autoRefresh = true;
 
     private PCAssemblyManager assemblyManager;
     private float lastUpdateTime;
     private int lastCompletedStages = -1;
     private int lastStageIndex = -1;
-    private string lastStageName = "";
 
     void Start()
     {
@@ -34,28 +33,21 @@ public class PCAssemblyUI : MonoBehaviour
 
     void InitializeUI()
     {
-        // Ищем PCAssemblyManager в сцене
         assemblyManager = FindObjectOfType<PCAssemblyManager>();
 
         if (assemblyManager == null)
         {
-            Debug.LogError("PCAssemblyManager не найден в сцене! Создай GameObject с PCAssemblyManager.");
-
-            // Отключаем UI если менеджер не найден
+            Debug.LogError("PCAssemblyManager не найден!");
             if (assemblyPanel != null)
                 assemblyPanel.SetActive(false);
-
             return;
         }
 
-        // Проверяем включена ли система этапов
         if (!assemblyManager.enablePCAssemblyStages)
         {
-            Debug.LogWarning("PCAssemblyStages отключен в PCAssemblyManager!");
-
+            Debug.LogWarning("PCAssemblyStages отключен!");
             if (assemblyPanel != null)
                 assemblyPanel.SetActive(false);
-
             return;
         }
 
@@ -73,10 +65,8 @@ public class PCAssemblyUI : MonoBehaviour
         if (completeStageButton != null)
             completeStageButton.onClick.AddListener(OnCompleteStageClicked);
 
-        // Инициализируем UI
         RefreshAllUI();
 
-        // Включаем панель если она есть
         if (assemblyPanel != null)
             assemblyPanel.SetActive(true);
 
@@ -85,10 +75,9 @@ public class PCAssemblyUI : MonoBehaviour
 
     void Update()
     {
-        // Автоматическое обновление UI с интервалом
         if (autoRefresh && assemblyManager != null && Time.time - lastUpdateTime >= updateInterval)
         {
-            RefreshProgress(); // Обновляем только прогресс для производительности
+            RefreshProgress();
             lastUpdateTime = Time.time;
         }
     }
@@ -134,23 +123,23 @@ public class PCAssemblyUI : MonoBehaviour
 
     void UpdateUI(int stageIndex, PCAssemblyManager.PCAssemblyStage stage)
     {
-        // Проверяем все ссылки чтобы избежать NullReferenceException
+        // Обновляем текст
         if (stageTitleText != null)
             stageTitleText.text = $"{stageIndex + 1}. {stage.stageName}";
 
         if (stageDescriptionText != null)
             stageDescriptionText.text = stage.stageDescription;
 
-        if (progressSlider != null && assemblyManager != null)
-            progressSlider.value = assemblyManager.GetCurrentStageProgress();
+        // ОБНОВЛЯЕМ ПРОГРЕСС - ИСПОЛЬЗУЕМ ПРАВИЛЬНЫЙ МЕТОД
+        float progress = CalculateProgress(stageIndex, stage);
 
-        if (progressText != null && assemblyManager != null)
-        {
-            float progress = assemblyManager.GetCurrentStageProgress() * 100f;
-            progressText.text = $"Прогресс этапа: {progress:F0}%";
-        }
+        if (progressSlider != null)
+            progressSlider.value = progress;
 
-        // Обновляем состояние кнопок
+        if (progressText != null)
+            progressText.text = $"Прогресс: {progress * 100:F0}%";
+
+        // Обновляем кнопки
         if (previousStageButton != null)
             previousStageButton.interactable = stageIndex > 0;
 
@@ -166,12 +155,35 @@ public class PCAssemblyUI : MonoBehaviour
             int completedStages = GetCompletedStagesCount();
             debugText.text = $"Этап: {stageIndex + 1}/{assemblyManager.AssemblyStages.Count}\n" +
                            $"Завершено: {completedStages}/{assemblyManager.AssemblyStages.Count}\n" +
+                           $"Прогресс: {progress * 100:F0}%\n" +
                            $"Заблокирован: {stage.isLocked}\n" +
                            $"Завершен: {stage.isCompleted}";
         }
     }
 
-    // Основной метод обновления всего UI
+    // ПРАВИЛЬНЫЙ РАСЧЕТ ПРОГРЕССА
+    float CalculateProgress(int stageIndex, PCAssemblyManager.PCAssemblyStage stage)
+    {
+        if (assemblyManager == null) return 0f;
+
+        // Вариант 1: Общий прогресс всей сборки
+        float totalProgress = (float)GetCompletedStagesCount() / assemblyManager.AssemblyStages.Count;
+
+        // Вариант 2: Прогресс текущего этапа (0% или 100%)
+        float stageProgress = stage.isCompleted ? 1f : 0f;
+
+        // Вариант 3: Комбинированный прогресс
+        // Текущий этап считается как 50% если не завершен
+        float combinedProgress = totalProgress;
+        if (!stage.isCompleted && !stage.isLocked)
+        {
+            // Добавляем частичный прогресс для текущего этапа
+            combinedProgress += (0.5f / assemblyManager.AssemblyStages.Count);
+        }
+
+        return combinedProgress;
+    }
+
     void RefreshAllUI()
     {
         if (assemblyManager != null)
@@ -184,42 +196,36 @@ public class PCAssemblyUI : MonoBehaviour
         }
     }
 
-    // Быстрое обновление только прогресса (для Update)
     void RefreshProgress()
     {
         if (assemblyManager == null) return;
 
-        // Проверяем изменился ли прогресс
         int currentCompleted = GetCompletedStagesCount();
         int currentStageIndex = assemblyManager.CurrentStageIndex;
-        var currentStage = assemblyManager.GetCurrentStage();
-        string currentStageName = currentStage != null ? currentStage.stageName : "";
 
         // Обновляем только если есть изменения
         bool needsUpdate = currentCompleted != lastCompletedStages ||
-                          currentStageIndex != lastStageIndex ||
-                          currentStageName != lastStageName;
+                          currentStageIndex != lastStageIndex;
 
         if (needsUpdate)
         {
-            if (progressSlider != null)
-                progressSlider.value = assemblyManager.GetCurrentStageProgress();
-
-            if (progressText != null)
+            var currentStage = assemblyManager.GetCurrentStage();
+            if (currentStage != null)
             {
-                float progress = assemblyManager.GetAssemblyProgress() * 100f;
-                progressText.text = $"Прогресс: {progress:F0}%";
-            }
+                float progress = CalculateProgress(currentStageIndex, currentStage);
 
-            // Сохраняем текущие значения для сравнения
-            lastCompletedStages = currentCompleted;
-            lastStageIndex = currentStageIndex;
-            lastStageName = currentStageName;
+                if (progressSlider != null)
+                    progressSlider.value = progress;
+
+                if (progressText != null)
+                    progressText.text = $"Прогресс: {progress * 100:F0}%";
+
+                lastCompletedStages = currentCompleted;
+                lastStageIndex = currentStageIndex;
+            }
         }
     }
 
-
-    // Вспомогательный метод для подсчета завершенных этапов
     int GetCompletedStagesCount()
     {
         if (assemblyManager == null || assemblyManager.AssemblyStages == null) return 0;
@@ -232,13 +238,13 @@ public class PCAssemblyUI : MonoBehaviour
         return count;
     }
 
-    // Метод для принудительного обновления UI (можно вызвать из других скриптов)
+    // Метод для принудительного обновления UI
     public void RefreshUI()
     {
         RefreshAllUI();
     }
 
-    // Метод для переключения на конкретный этап (для дебага)
+    // Метод для переключения на конкретный этап
     public void SetStage(int stageIndex)
     {
         if (assemblyManager != null)
