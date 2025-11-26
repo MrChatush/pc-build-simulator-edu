@@ -13,12 +13,10 @@ MonoBehaviour:
   m_Name: Building Types
   m_EditorClassIdentifier: 
   m_AllBuildingTypes:
-  - Wall
   - Floor
-  - Foundation
-  - Stair
   - BlockPC
   - GPU
   - Table
   - Mathboard
   - CPU
+  - RAM
