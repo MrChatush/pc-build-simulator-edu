@@ -5618,7 +5618,7 @@ MonoBehaviour:
     stageDescription: "\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0435
       \u0432\u0438\u0434\u0435\u043E\u043A\u0430\u0440\u0442\u0443 \u0432 PCI-E \u0441\u043B\u043E\u0442"
     availableParts:
-    - {fileID: 3905710294307925887, guid: 1d09a4639bba44648b0eb8664c5caf80, type: 3}
+    - {fileID: 6591426905050249381, guid: dfb545088638f504b8df83be046aa38a, type: 3}
     isCompleted: 0
     isLocked: 0
   currentStageIndex: 0
